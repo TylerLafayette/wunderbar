@@ -10,6 +10,13 @@ by [Sketchybar](https://github.com/FelixKratz/SketchyBar)!
 > i am hard at work developing wunderbar as quickly as possible, but it is still
 > alpha software that is probably not ready for daily use so be careful!!!
 
+# how does it look?
+
+while wunderbar is intended to be flexible enough to create any look desired, i
+am prioritizing any features that will allow me to achieve this concept look i
+designed a couple months ago on sketch:
+<img src="docs/concept-example.png" alt="Concept art of status bar" />
+
 # todos
 
 - [ ] safe `gui` module based on cocoa bindings
