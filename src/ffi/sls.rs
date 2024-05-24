@@ -121,6 +121,24 @@ impl<'conn> SlsWindow<'conn> {
         }
     }
 
+    pub fn order_window(&mut self, mode: i32, relative_to: &Self) -> Result<(), CGError> {
+        // SAFETY: we know the connection and window are valid due to the lifetimes of the structs
+        let err = unsafe {
+            SLSOrderWindow(
+                self.conn.conn_id,
+                self.window_id,
+                mode,
+                relative_to.window_id,
+            )
+        };
+
+        if err > 0 {
+            Err(err)
+        } else {
+            Ok(())
+        }
+    }
+
     pub fn get_cg_context(&mut self) -> core_graphics::context::CGContext {
         // SAFETY: The context returned from [`SLWindowContextCreate`] refers to the same
         // object [`CGContext`] that is also used by the `core_graphics` crate. The use of
