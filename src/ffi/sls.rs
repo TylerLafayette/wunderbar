@@ -24,7 +24,7 @@ extern "C" {
     fn SLSSetWindowLevel(cid: c_int, wid: u32, level: c_int) -> CGError;
     fn SLSSetWindowResolution(cid: c_int, wid: u32, res: c_double) -> CGError;
     fn SLWindowContextCreate(cid: c_int, wid: u32, options: *const c_void) -> *mut c_void;
-    fn SLSFlushWindowContentRegion(cid: c_int, wid: u32, dirty: *const c_void);
+    fn SLSFlushWindowContentRegion(cid: c_int, wid: u32, dirty: *const c_void) -> i32;
 }
 
 bitflags! {
@@ -130,6 +130,19 @@ impl<'conn> SlsWindow<'conn> {
                 mode,
                 relative_to.window_id,
             )
+        };
+
+        if err > 0 {
+            Err(err)
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn flush_window_content_region(&mut self) -> Result<(), CGError> {
+        // SAFETY: we know the connection and window are valid due to the lifetimes of the structs
+        let err = unsafe {
+            SLSFlushWindowContentRegion(self.conn.conn_id, self.window_id, std::ptr::null())
         };
 
         if err > 0 {
