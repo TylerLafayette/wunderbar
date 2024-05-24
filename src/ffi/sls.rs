@@ -17,6 +17,7 @@ extern "C" {
         region: *const c_void,
         wid: *mut u32,
     ) -> i32;
+    fn SLSReleaseWindow(cid: c_int, wid: u32) -> i32;
     fn SLSSetWindowTags(cid: c_int, wid: u32, tags: *const u64, tag_size: c_int) -> CGError;
     fn SLSClearWindowTags(cid: c_int, wid: u32, tags: *const u64, tag_size: c_int) -> CGError;
     fn SLSOrderWindow(cid: c_int, wid: u32, mode: c_int, relativeToWID: u32) -> CGError;
@@ -134,6 +135,14 @@ impl<'conn> SlsWindow<'conn> {
 
             core_graphics::context::CGContext::from_existing_context_ptr(ctx)
         }
+    }
+}
+
+impl<'conn> Drop for SlsWindow<'conn> {
+    fn drop(&mut self) {
+        let err = unsafe { SLSReleaseWindow(self.conn.conn_id, self.window_id) };
+
+        assert_eq!(err, 0)
     }
 }
 
