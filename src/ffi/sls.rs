@@ -139,6 +139,28 @@ impl<'conn> SlsWindow<'conn> {
         }
     }
 
+    pub fn set_window_level(&mut self, level: i32) -> Result<(), CGError> {
+        // SAFETY: we know the connection and window are valid due to the lifetimes of the structs
+        let err = unsafe { SLSSetWindowLevel(self.conn.conn_id, self.window_id, level) };
+
+        if err > 0 {
+            Err(err)
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn set_window_resolution(&mut self, resolution: f64) -> Result<(), CGError> {
+        // SAFETY: we know the connection and window are valid due to the lifetimes of the structs
+        let err = unsafe { SLSSetWindowResolution(self.conn.conn_id, self.window_id, resolution) };
+
+        if err > 0 {
+            Err(err)
+        } else {
+            Ok(())
+        }
+    }
+
     pub fn flush_window_content_region(&mut self) -> Result<(), CGError> {
         // SAFETY: we know the connection and window are valid due to the lifetimes of the structs
         let err = unsafe {
