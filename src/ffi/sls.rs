@@ -2,9 +2,10 @@ use bitflags::bitflags;
 use core_graphics::sys::CGContextRef as CGContextRefSys;
 use libc::{c_double, c_float, c_int, c_void};
 
-use crate::ffi::core_services::{CFRelease, CGSNewRegionWithRect};
-
-use super::{CGError, CGPoint, CGRect, CGSize};
+use super::{
+    core_services::{CFRelease, CGSNewRegionWithRect},
+    CGError, CGPoint, CGRect, CGResult, CGSize,
+};
 
 #[link(name = "SkyLight", kind = "framework")]
 extern "C" {
@@ -18,11 +19,11 @@ extern "C" {
         wid: *mut u32,
     ) -> i32;
     fn SLSReleaseWindow(cid: c_int, wid: u32) -> i32;
-    fn SLSSetWindowTags(cid: c_int, wid: u32, tags: *const u64, tag_size: c_int) -> CGError;
-    fn SLSClearWindowTags(cid: c_int, wid: u32, tags: *const u64, tag_size: c_int) -> CGError;
-    fn SLSOrderWindow(cid: c_int, wid: u32, mode: c_int, relativeToWID: u32) -> CGError;
-    fn SLSSetWindowLevel(cid: c_int, wid: u32, level: c_int) -> CGError;
-    fn SLSSetWindowResolution(cid: c_int, wid: u32, res: c_double) -> CGError;
+    fn SLSSetWindowTags(cid: c_int, wid: u32, tags: *const u64, tag_size: c_int) -> i32;
+    fn SLSClearWindowTags(cid: c_int, wid: u32, tags: *const u64, tag_size: c_int) -> i32;
+    fn SLSOrderWindow(cid: c_int, wid: u32, mode: c_int, relativeToWID: u32) -> i32;
+    fn SLSSetWindowLevel(cid: c_int, wid: u32, level: c_int) -> i32;
+    fn SLSSetWindowResolution(cid: c_int, wid: u32, res: c_double) -> i32;
     fn SLWindowContextCreate(cid: c_int, wid: u32, options: *const c_void) -> *mut c_void;
     fn SLSFlushWindowContentRegion(cid: c_int, wid: u32, dirty: *const c_void) -> i32;
 }
@@ -46,6 +47,9 @@ pub struct SlsConnection {
 }
 
 impl SlsConnection {
+    /// Constructs a new [`SlsConnection`]. This function does not actually allocate, as the
+    /// SkyLight framework automatically assigns a global connection ID to each process on
+    /// initiation. [`SlsConnecction`] simply acts as an abstraction for maintaining state.
     pub fn new() -> Self {
         // SAFETY: FFI call
         let conn_id = unsafe { SLSMainConnectionID() };
@@ -53,7 +57,7 @@ impl SlsConnection {
         Self { conn_id }
     }
 
-    pub fn new_window(&mut self, origin: CGPoint, size: CGSize) -> Result<SlsWindow<'_>, ()> {
+    pub fn new_window(&mut self, origin: CGPoint, size: CGSize) -> CGResult<SlsWindow<'_>> {
         SlsWindow::new(&*self, origin, size)
     }
 }
@@ -65,27 +69,25 @@ pub struct SlsWindow<'conn> {
 }
 
 impl<'conn> SlsWindow<'conn> {
-    fn new(conn: &'conn SlsConnection, origin: CGPoint, size: CGSize) -> Result<Self, ()> {
+    fn new(conn: &'conn SlsConnection, origin: CGPoint, size: CGSize) -> CGResult<Self> {
         unsafe {
             let rect = CGRect::new(&origin, &size);
             let mut region_ptr: *const c_void = std::ptr::null_mut();
             // TODO: error handling
-            if CGSNewRegionWithRect(&rect as *const _, &mut region_ptr as *mut _) > 0 {
-                return Err(());
-            }
+            CGError::result_from(CGSNewRegionWithRect(
+                &rect as *const _,
+                &mut region_ptr as *mut _,
+            ))?;
 
             let mut window_id: u32 = 0;
-            let res = SLSNewWindow(
+            CGError::result_from(SLSNewWindow(
                 conn.conn_id,
                 2,
                 0.0,
                 0.0,
                 region_ptr,
                 &mut window_id as *mut _,
-            );
-            if res > 0 {
-                return Err(());
-            }
+            ));
 
             CFRelease(region_ptr);
 
@@ -100,11 +102,7 @@ impl<'conn> SlsWindow<'conn> {
             SLSSetWindowTags(self.conn.conn_id, self.window_id, &tag_bits as *const _, 64)
         };
 
-        if err > 0 {
-            Err(err)
-        } else {
-            Ok(())
-        }
+        CGError::result_from(err)
     }
 
     pub fn clear_window_tags(&mut self, tags_to_clear: CgsWindowTags) -> Result<(), CGError> {
@@ -114,11 +112,7 @@ impl<'conn> SlsWindow<'conn> {
             SLSClearWindowTags(self.conn.conn_id, self.window_id, &tag_bits as *const _, 64)
         };
 
-        if err > 0 {
-            Err(err)
-        } else {
-            Ok(())
-        }
+        CGError::result_from(err)
     }
 
     pub fn order_window(&mut self, mode: i32, relative_to: &Self) -> Result<(), CGError> {
@@ -132,33 +126,21 @@ impl<'conn> SlsWindow<'conn> {
             )
         };
 
-        if err > 0 {
-            Err(err)
-        } else {
-            Ok(())
-        }
+        CGError::result_from(err)
     }
 
     pub fn set_window_level(&mut self, level: i32) -> Result<(), CGError> {
         // SAFETY: we know the connection and window are valid due to the lifetimes of the structs
         let err = unsafe { SLSSetWindowLevel(self.conn.conn_id, self.window_id, level) };
 
-        if err > 0 {
-            Err(err)
-        } else {
-            Ok(())
-        }
+        CGError::result_from(err)
     }
 
     pub fn set_window_resolution(&mut self, resolution: f64) -> Result<(), CGError> {
         // SAFETY: we know the connection and window are valid due to the lifetimes of the structs
         let err = unsafe { SLSSetWindowResolution(self.conn.conn_id, self.window_id, resolution) };
 
-        if err > 0 {
-            Err(err)
-        } else {
-            Ok(())
-        }
+        CGError::result_from(err)
     }
 
     pub fn flush_window_content_region(&mut self) -> Result<(), CGError> {
@@ -167,11 +149,7 @@ impl<'conn> SlsWindow<'conn> {
             SLSFlushWindowContentRegion(self.conn.conn_id, self.window_id, std::ptr::null())
         };
 
-        if err > 0 {
-            Err(err)
-        } else {
-            Ok(())
-        }
+        CGError::result_from(err)
     }
 
     pub fn get_cg_context(&mut self) -> core_graphics::context::CGContext {

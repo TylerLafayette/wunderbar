@@ -17,7 +17,7 @@ pub type CFTypeRef = *const c_void;
 extern "C" {
     /// Allocates a new CGSRegion using the given [`CGRect`]'s bounds, setting the `out`
     /// parameter to point to the newly created CGSRegion on success.
-    pub fn CGSNewRegionWithRect(rect: *const CGRect, out: *mut CGSRegionRef) -> CGError;
+    pub fn CGSNewRegionWithRect(rect: *const CGRect, out: *mut CGSRegionRef) -> i32;
 
     /// Runs the current thread’s CFRunLoop object in its default mode indefinitely.
     ///
