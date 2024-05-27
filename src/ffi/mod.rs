@@ -96,7 +96,7 @@ impl CGError {
     /// a [`CGError`] and return [`Ok(())`] if it is a [`CGError::Success`]. Otherwise, it will
     /// return the [`CGError`] wrapped in an [`Err`].
     ///
-    /// NOTE: This function will panic if the value can not be parsed into a valid i[`CGError`].
+    /// NOTE: This function will panic if the value can not be parsed into a valid [`CGError`].
     pub(super) fn result_from(value: impl Into<Self>) -> Result<(), Self> {
         let err = value.into();
         if let Self::Success = err {
