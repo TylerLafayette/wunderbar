@@ -152,7 +152,11 @@ impl<'conn> SlsWindow<'conn> {
         CGError::result_from(err)
     }
 
-    pub fn get_cg_context(&mut self) -> core_graphics::context::CGContext {
+    /// Creates a graphics context which can be used to draw graphics on the [`SlsWindow`].
+    ///
+    /// If the framework returns a null context pointer, signaling that there was an issue creating
+    /// the context, this function will return an error value of [`CGError::Failure`].
+    pub fn get_cg_context(&mut self) -> CGResult<core_graphics::context::CGContext> {
         // SAFETY: The context returned from [`SLWindowContextCreate`] refers to the same
         // object [`CGContext`] that is also used by the `core_graphics` crate. The use of
         // transmute here is only to convince Rust to accept the pointer as a [`CGContextRefSys`].
@@ -162,9 +166,13 @@ impl<'conn> SlsWindow<'conn> {
         // safety.
         unsafe {
             let ctx = SLWindowContextCreate(self.conn.conn_id, self.window_id, std::ptr::null());
+            if ctx.is_null() {
+                return Err(CGError::Failure);
+            }
+
             let ctx = std::mem::transmute::<*const c_void, CGContextRefSys>(ctx);
 
-            core_graphics::context::CGContext::from_existing_context_ptr(ctx)
+            Ok(core_graphics::context::CGContext::from_existing_context_ptr(ctx))
         }
     }
 }
