@@ -3,7 +3,7 @@ use core_graphics::sys::CGContextRef as CGContextRefSys;
 use libc::{c_double, c_float, c_int, c_void};
 
 use super::{
-    core_services::{CFRelease, CGSNewRegionWithRect},
+    core_services::{CFRelease, CFRunLoopRun, CGSNewRegionWithRect},
     CGError, CGPoint, CGRect, CGResult, CGSize,
 };
 
@@ -57,8 +57,16 @@ impl SlsConnection {
         Self { conn_id }
     }
 
-    pub fn new_window(&mut self, origin: CGPoint, size: CGSize) -> CGResult<SlsWindow<'_>> {
+    pub fn new_window(&self, origin: CGPoint, size: CGSize) -> CGResult<SlsWindow<'_>> {
         SlsWindow::new(&*self, origin, size)
+    }
+
+    pub fn run_app(&self) -> CGResult<()> {
+        unsafe {
+            CFRunLoopRun();
+        }
+
+        Ok(())
     }
 }
 
