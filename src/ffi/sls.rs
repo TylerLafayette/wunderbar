@@ -199,10 +199,36 @@ impl<'conn> Drop for SlsWindow<'conn> {
 
 #[cfg(test)]
 mod tests {
+    use crate::ui::color::Color;
+
     use super::*;
 
     #[test]
-    fn it_works() {
-        let mut conn = SlsConnection::new();
+    fn window_test() {
+        let conn = SlsConnection::new();
+        let mut win = conn
+            .new_window(CGPoint::new(0.0, 0.0), CGSize::new(1280.0, 40.0))
+            .unwrap();
+        win.set_window_tags(CgsWindowTags::ExposeFade | CgsWindowTags::PreventsActivation)
+            .unwrap();
+        win.clear_window_tags(CgsWindowTags::empty()).unwrap();
+        win.set_window_resolution(2.0).unwrap();
+        win.set_window_level(1).unwrap();
+        // NOTE: it seems that this step is necessary to get the window to appear, at least on my
+        // machine
+        win.order_window(1, None).unwrap();
+
+        let ctx = win.get_cg_context().unwrap();
+        ctx.set_fill_color(&Color::GREEN.into());
+        ctx.fill_rect(CGRect::new(
+            &CGPoint::new(0.0, 0.0),
+            &CGSize::new(200.0, 40.0),
+        ));
+        ctx.flush();
+
+        win.flush_window_content_region().unwrap();
+
+        conn.run_app().unwrap();
+        loop {}
     }
 }
