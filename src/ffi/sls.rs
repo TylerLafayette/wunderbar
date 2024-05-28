@@ -123,14 +123,18 @@ impl<'conn> SlsWindow<'conn> {
         CGError::result_from(err)
     }
 
-    pub fn order_window(&mut self, mode: i32, relative_to: &Self) -> Result<(), CGError> {
+    pub fn order_window(&mut self, mode: i32, relative_to: Option<&Self>) -> Result<(), CGError> {
         // SAFETY: we know the connection and window are valid due to the lifetimes of the structs
         let err = unsafe {
             SLSOrderWindow(
                 self.conn.conn_id,
                 self.window_id,
                 mode,
-                relative_to.window_id,
+                if let Some(other) = relative_to {
+                    other.window_id
+                } else {
+                    self.window_id
+                },
             )
         };
 
