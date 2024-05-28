@@ -95,7 +95,7 @@ impl<'conn> SlsWindow<'conn> {
                 0.0,
                 region_ptr,
                 &mut window_id as *mut _,
-            ));
+            ))?;
 
             CFRelease(region_ptr);
 
