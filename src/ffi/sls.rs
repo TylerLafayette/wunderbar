@@ -3,9 +3,11 @@ use core_graphics::sys::CGContextRef as CGContextRefSys;
 use libc::{c_double, c_float, c_int, c_void};
 
 use super::{
-    core_services::{CFRelease, CFRunLoopRun, CGSNewRegionWithRect},
+    core_services::{CFDictionary, CFRelease, CFRunLoopRun, CFValue, CGSNewRegionWithRect},
     CGError, CGPoint, CGRect, CGResult, CGSize,
 };
+
+type CFDictionaryRef = *const c_void;
 
 #[link(name = "SkyLight", kind = "framework")]
 extern "C" {
@@ -26,6 +28,7 @@ extern "C" {
     fn SLSSetWindowResolution(cid: c_int, wid: u32, res: c_double) -> i32;
     fn SLWindowContextCreate(cid: c_int, wid: u32, options: *const c_void) -> *mut c_void;
     fn SLSFlushWindowContentRegion(cid: c_int, wid: u32, dirty: *const c_void) -> i32;
+    fn SLSWindowSetShadowProperties(wid: u32, properties: CFDictionaryRef) -> i32;
 }
 
 bitflags! {
@@ -186,6 +189,18 @@ impl<'conn> SlsWindow<'conn> {
 
             Ok(core_graphics::context::CGContext::from_existing_context_ptr(ctx))
         }
+    }
+
+    pub fn disable_shadow(&self) -> CGResult<()> {
+        let shadow_density_key = CFValue::String("com.apple.WindowShadowDensity".to_string());
+        let shadow_density = CFValue::Index(0);
+        let dictionary = CFDictionary::new_from_entries([(shadow_density_key, shadow_density)])?;
+
+        CGError::result_from(unsafe {
+            SLSWindowSetShadowProperties(self.window_id, dictionary.as_ptr())
+        })?;
+
+        Ok(())
     }
 }
 

@@ -47,6 +47,12 @@ impl<'app> Window<'app> {
         })
     }
 
+    pub fn disable_shadow(&mut self) -> UiResult<()> {
+        self.inner.disable_shadow()?;
+
+        Ok(())
+    }
+
     pub fn bring_to_front(&mut self) -> UiResult<()> {
         self.inner.set_window_level(0)?;
         self.inner.order_window(1, None)?;

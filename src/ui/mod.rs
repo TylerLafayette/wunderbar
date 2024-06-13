@@ -8,6 +8,7 @@ pub mod app;
 pub mod block;
 pub mod color;
 pub mod geometry;
+pub mod layout;
 pub mod window;
 
 type Context = core_graphics::context::CGContext;
