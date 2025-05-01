@@ -1,10 +1,12 @@
 use wunderbar::ui::{
     app::App,
-    block::{Block, Props},
+    block::{Block, BoxProps},
     color::Color,
     geometry::{Bounds, Padding},
+    layout::{Direction, Layout, LayoutProps},
+    text::{Font, Text, TextProps},
     window::{WindowInitOptions, WindowTags},
-    Drawable,
+    Drawable, IntoBoxDrawable,
 };
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -18,36 +20,55 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 | WindowTags::PreventsActivation
                 | WindowTags::DisableShadow,
         ),
+        resolution: Some(2.0),
         ..Default::default()
     })?;
 
     window.disable_shadow()?;
 
     let inner_block = Block::new(
-        (),
-        Props {
+        Text::new(
+            "Hello world aaa  a a a a",
+            TextProps {
+                font: Font::new("Soleil", 14.0).unwrap_or_default(),
+                color: Color::GREEN,
+            },
+        ),
+        BoxProps {
             background_color: Some(Color::BLACK),
-            min_width: Some(86),
-            min_height: Some(26),
+            padding: Some(Padding::uni(4)),
             ..Default::default()
         },
     );
 
     let block = Block::new(
         inner_block,
-        Props {
+        BoxProps {
             background_color: Some(Color::BLUE),
-            padding: Some(Padding::uni(2)),
-            min_width: Some(90),
-            min_height: Some(30),
+            padding: Some(Padding::uni(10)),
             ..Default::default()
         },
     );
 
-    println!("{:?}", block.content_size(Bounds::new(0, 0, 1728, 40)));
+    let block2 = Block::new(
+        (),
+        BoxProps {
+            background_color: Some(Color::GREEN),
+            width: Some(4),
+            height: Some(4),
+            ..Default::default()
+        },
+    );
+
+    let layout = Layout::with_children(
+        vec![block.erase(), block2.erase()],
+        LayoutProps {
+            direction: Direction::Row,
+        },
+    );
 
     window.bring_to_front()?;
-    window.draw(block)?;
+    window.draw(layout)?;
 
     app.run()?;
 

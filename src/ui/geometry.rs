@@ -141,6 +141,13 @@ impl Size {
     pub fn contract_height(self, contract_by_height: usize) -> Self {
         self.contract(0, contract_by_height)
     }
+
+    pub fn mul(self, factor: usize) -> Self {
+        Self {
+            width: self.width * factor,
+            height: self.height * factor,
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]
@@ -188,6 +195,24 @@ impl Bounds {
             },
         }
     }
+
+    pub fn padding_offset(self, padding: &Padding) -> Self {
+        let Point { x, y } = self.position;
+        let Size { width, height } = self.size;
+
+        Self {
+            position: Point {
+                x: x + padding.left,
+                y: y + padding.top,
+            },
+            size: Size {
+                width: width.checked_add(padding.left + padding.right).unwrap_or(0),
+                height: height
+                    .checked_add(padding.top + padding.bottom)
+                    .unwrap_or(0),
+            },
+        }
+    }
 }
 
 impl Into<NSRect> for Bounds {
@@ -210,6 +235,17 @@ impl Into<CGRect> for Bounds {
         CGRect::new(
             &CGPoint::new(x as f64, y as f64),
             &CGSize::new(width as f64, height as f64),
+        )
+    }
+}
+
+impl Into<Bounds> for CGRect {
+    fn into(self) -> Bounds {
+        Bounds::new(
+            self.origin.x as usize,
+            self.origin.y as usize,
+            self.size.width as usize,
+            self.size.height as usize,
         )
     }
 }

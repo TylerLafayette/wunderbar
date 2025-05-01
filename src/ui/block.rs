@@ -6,11 +6,11 @@ use super::{
 
 pub struct Block<Child = ()> {
     child: Child,
-    props: Props,
+    props: BoxProps,
 }
 
 #[derive(Debug, Clone, PartialEq, Default)]
-pub struct Props {
+pub struct BoxProps {
     pub min_width: Option<usize>,
     pub max_width: Option<usize>,
     pub min_height: Option<usize>,
@@ -23,7 +23,7 @@ pub struct Props {
 }
 
 impl<Child: Drawable> Block<Child> {
-    pub fn new(child: Child, props: Props) -> Self {
+    pub fn new(child: Child, props: BoxProps) -> Self {
         Self { child, props }
     }
 
@@ -65,17 +65,20 @@ impl<Child: Drawable> Block<Child> {
         Bounds::new(bounds.position.x, bounds.position.y, width, height)
     }
 
-    fn get_total_bounds(&self, bounds: Bounds) -> Bounds {
+    fn get_total_bounds(&self, ctx: &super::Context, bounds: Bounds) -> Bounds {
         let Size {
             width: child_width,
             height: child_height,
-        } = self.child.content_size(self.get_child_bounds(bounds));
+        } = self.child.content_size(ctx, self.get_child_bounds(bounds));
 
         let mut width = if let Some(width) = self.props.width {
             width
         } else {
             child_width
         };
+        if let Some(padding) = &self.props.padding {
+            width += padding.left + padding.right;
+        }
         if let Some(min_width) = self.props.min_width {
             width = width.max(min_width);
         }
@@ -88,6 +91,9 @@ impl<Child: Drawable> Block<Child> {
         } else {
             child_height
         };
+        if let Some(padding) = &self.props.padding {
+            height += padding.top + padding.bottom;
+        }
         if let Some(min_height) = self.props.min_height {
             height = height.max(min_height);
         }
@@ -106,7 +112,7 @@ impl<Child: Drawable> Block<Child> {
         ctx: &super::Context,
         bounds: super::geometry::Bounds,
     ) -> Result<(), super::Error> {
-        let self_bounds = self.get_total_bounds(bounds);
+        let self_bounds = self.get_total_bounds(ctx, bounds);
 
         if let Some(bg_color) = &self.props.background_color {
             ctx.set_fill_color(&(*bg_color).into());
@@ -118,8 +124,12 @@ impl<Child: Drawable> Block<Child> {
 }
 
 impl<Child: Drawable> Drawable for Block<Child> {
-    fn content_size(&self, bounds: super::geometry::Bounds) -> super::geometry::Size {
-        self.get_total_bounds(bounds).size
+    fn content_size(
+        &self,
+        ctx: &super::Context,
+        bounds: super::geometry::Bounds,
+    ) -> super::geometry::Size {
+        self.get_total_bounds(ctx, bounds).size
     }
 
     fn draw(&self, ctx: &super::Context, bounds: super::geometry::Bounds) -> UiResult<()> {

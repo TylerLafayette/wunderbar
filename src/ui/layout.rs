@@ -4,7 +4,7 @@ use super::Drawable;
 
 pub struct Layout<Child> {
     children: Vec<Child>,
-    props: Props,
+    props: LayoutProps,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -14,25 +14,29 @@ pub enum Direction {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Props {
+pub struct LayoutProps {
     pub direction: Direction,
 }
 
 impl<Child> Layout<Child> {
-    pub fn empty(props: Props) -> Self {
+    pub fn empty(props: LayoutProps) -> Self {
         Self {
             children: Vec::new(),
             props,
         }
     }
 
-    pub fn with_children(children: Vec<Child>, props: Props) -> Self {
+    pub fn with_children(children: Vec<Child>, props: LayoutProps) -> Self {
         Self { children, props }
     }
 }
 
 impl<Child: Drawable> Drawable for Layout<Child> {
-    fn content_size(&self, bounds: super::geometry::Bounds) -> super::geometry::Size {
+    fn content_size(
+        &self,
+        ctx: &super::Context,
+        bounds: super::geometry::Bounds,
+    ) -> super::geometry::Size {
         let Bounds {
             position: Point { x, y },
             size: Size { width, height },
@@ -44,7 +48,7 @@ impl<Child: Drawable> Drawable for Layout<Child> {
 
                 for child in &self.children {
                     let child_bounds = Bounds::new(x + used_width, y, width - used_width, height);
-                    let child_size = child.content_size(child_bounds);
+                    let child_size = child.content_size(ctx, child_bounds);
 
                     used_width += child_size.width;
                 }
@@ -56,7 +60,7 @@ impl<Child: Drawable> Drawable for Layout<Child> {
 
                 for child in &self.children {
                     let child_bounds = Bounds::new(x, y + used_height, width, height - used_height);
-                    let child_size = child.content_size(child_bounds);
+                    let child_size = child.content_size(ctx, child_bounds);
 
                     used_height += child_size.height;
                 }
@@ -78,7 +82,7 @@ impl<Child: Drawable> Drawable for Layout<Child> {
 
                 for child in &self.children {
                     let child_bounds = Bounds::new(x + used_width, y, width - used_width, height);
-                    let child_size = child.content_size(child_bounds);
+                    let child_size = child.content_size(ctx, child_bounds);
                     child.draw(ctx, child_bounds)?;
 
                     used_width += child_size.width;
@@ -89,7 +93,7 @@ impl<Child: Drawable> Drawable for Layout<Child> {
 
                 for child in &self.children {
                     let child_bounds = Bounds::new(x, y + used_height, width, height - used_height);
-                    let child_size = child.content_size(child_bounds);
+                    let child_size = child.content_size(ctx, child_bounds);
                     child.draw(ctx, child_bounds)?;
 
                     used_height += child_size.height;

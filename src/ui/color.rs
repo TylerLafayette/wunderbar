@@ -19,12 +19,16 @@ impl Color {
     pub const fn rgba(r: f64, g: f64, b: f64, a: f64) -> Self {
         Self(r, g, b, a)
     }
+
+    pub fn into_cg_color(&self) -> CGColor {
+        let Color(r, g, b, a) = *self;
+
+        CGColor::rgb(r, g, b, a)
+    }
 }
 
 impl Into<CGColor> for Color {
     fn into(self) -> CGColor {
-        let Color(r, g, b, a) = self;
-
-        CGColor::rgb(r, g, b, a)
+        self.into_cg_color()
     }
 }
